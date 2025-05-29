@@ -50,4 +50,20 @@ A---B (undefined characters)
 
 
 ## 2. Recursive function for exporting/importing cue data
-To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file, and vise versa. 
+To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. To do so, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. One possible option is to use a loop in the main code, but to simplify, I created a dedicated function for each of import and export. I made functions that are self-contained which does not require on any global variables, based on the concept of modular programming. <br>
+For export, the function allows the input of the file name which will be used for the CSV file that will contain the cues once exported. The function will return only if the process is finished, and will not return any value.
+```.py
+def export_cue(n=1, database=None, file=None, name=None):
+    if n == 1:
+        file = open(f"{name}.csv", "w", newline="")
+        database = DatabaseManager('identifier.sqlite')
+    row = database.search(query = f"SELECT * FROM cues WHERE cue_id = {n}")
+    csv.writer(file).writerow(row[0])
+    print(row[0])
+    has_next = database.search(query = f"SELECT exists(SELECT 1 FROM cues WHERE cue_id = {n+1}) AS row_exists")
+    if has_next[0][0] == 1:
+        export_cue(n+1, database, file)
+    else:
+        database.close()
+        return
+```
