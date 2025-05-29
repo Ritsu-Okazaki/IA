@@ -49,7 +49,27 @@ A---B (undefined characters)
 ```
 
 ## 2. Class for parsing cue data
-To meet Success Criteria 1, allowing users to navigate through cue information that they have added, a parser that will decode the fixed width formatting in the database was required for the variables to be usable for display in the UI. To do this, one option was to 
+To meet Success Criteria 1, allowing users to navigate through cue information that they have added, a parser that will decode the fixed width formatting in the database was required for the variables to be usable for display in the UI. It is also necessary for the program to amalgamate the user UI input, into the fixed width formatting style. To do this, one option was to create functions for each formatting specs that has the input of the raw value, for both parsing and amalgamating. However, having considered the principle of modular programming, I discovered that this is unideal, as there will be multiple functions of similar method yet different condition which are not standardized. This obfuscates the code and hinders the readability as well as increasing the difficulty to maintain consistency. <br>
+Therefore, I decided to create a class `MultipleParser` for generalizing the process, which contains the functions to parse and amalgamate. The object will be initialized by the input of the formatting specs in `format_spec`. A pair of functions of two inputs, formatting specs and raw value, for both parsing and amalgamating would have served the same purpose, but I chose to use a class as there were no clear difference in performance, and I believe the usage of class would have better readability and pursue more of the principles of modular programming.
+```.py
+class MultipleParser:
+    def __init__(self, format_spec:dict):
+        self.format_spec = format_spec
+
+    def parse(self, raw:str)->dict:
+        return {
+            name: raw[start:end+1]
+            for name, (start, end) in zip(self.format_spec.keys(), self.format_spec.values())
+        }
+
+    def amalgamate(self, parsed:dict)->str:
+        result = ""
+        for p in parsed:
+            print(parsed[p])
+            length = self.format_spec[p][1] - self.format_spec[p][0]
+            result += str(parsed[p].rjust(length, "0"))
+        return result
+```
 
 ## 3. Recursive function for exporting/importing cue data
 To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. However, there is no direct conversion between relational database and CSV. Therefore, to achieve the objective, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. One possible option is to use a loop in the main code, but to simplify, I created a dedicated function for each of import and export. I made functions that are self-contained which does not require on any global variables, based on the concept of modular programming. <br>
