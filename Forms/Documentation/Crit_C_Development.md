@@ -70,6 +70,14 @@ class MultipleParser:
             result += str(parsed[p].rjust(length, "0"))
         return result
 ```
+The formatting specs `format_spec` comes in a dictionary which contains the tuple of the start digit and the end digit of the value of each component in the string following the fixed width formatting. Again, for readability and scalability, formatting specs of each genre are stored in a dictionary which the function `get_spec` will return the corresponding formatting by the input of the genre.
+```.py
+def get_spec(column_type:str)->dict:
+    spec_list = {"overhead": {"playback": (0,1), "strength": (2,4), "transition": (5,6)},
+                 "floor": {"pan": (0,0), "tilt": (1,2), "magnitude": (3,4), "red": (5,6), "green": (7,8), "blue": (9,10), "strobe": (11,11), "transition": (12,13)},
+                 "spotlight": {"onoff": (0,0), "radius": (1,1), "focus": (2,2), "behavior": (3,3), "transtion": (4,4)}}
+    return spec_list[column_type]
+```
 
 ## 3. Recursive function for exporting/importing cue data
 To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. However, there is no direct conversion between relational database and CSV. Therefore, to achieve the objective, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. One possible option is to use a loop in the main code, but to simplify, I created a dedicated function for each of import and export. I made functions that are self-contained which does not require on any global variables, based on the concept of modular programming. <br>
