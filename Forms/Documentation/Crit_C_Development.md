@@ -2,9 +2,9 @@
 # Criteria C
 ## List of techniques used:
 1. Fixed width encoding to store cue data
-2. Recursive function for exporting/importing cue data
-3. Class for parsing cue data
-4. Function for audio trimming and fading
+2. Class for parsing cue data
+3. Recursive function for exporting/importing cue data
+5. Function for audio trimming and fading
 ## 1. Fixed width formatting to store cue data
 To meet Success Criteria 2, allowing users to edit or add cue information and store them, and Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a standardized storage format in the database. At first, I had the option to create a column for each of the variables in the cue information in the relational database, which would look like below. <br>
 ![image](https://github.com/user-attachments/assets/62045649-8169-4a21-a757-8f91d93fe980) <br>
@@ -48,9 +48,11 @@ A---B (undefined characters)
 [B: transition time to next. 0~99 (0 will show instantaneous)]
 ```
 
+## 2. Class for parsing cue data
+To meet Success Criteria 1, allowing users to navigate through cue information that they have added, a parser that will decode the fixed width formatting in the database was required for the variables to be usable for display in the UI. To do this, one option was to 
 
-## 2. Recursive function for exporting/importing cue data
-To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. To do so, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. One possible option is to use a loop in the main code, but to simplify, I created a dedicated function for each of import and export. I made functions that are self-contained which does not require on any global variables, based on the concept of modular programming. <br>
+## 3. Recursive function for exporting/importing cue data
+To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. However, there is no direct conversion between relational database and CSV. Therefore, to achieve the objective, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. One possible option is to use a loop in the main code, but to simplify, I created a dedicated function for each of import and export. I made functions that are self-contained which does not require on any global variables, based on the concept of modular programming. <br>
 For export, the function allows the input of the file name which will be used for the CSV file that will contain the cues once exported. The function will return only if the process is finished, and will not return any value.
 ```.py
 def export_cue(n=1, database=None, file=None, name=None):
@@ -67,3 +69,6 @@ def export_cue(n=1, database=None, file=None, name=None):
         database.close()
         return
 ```
+
+
+
