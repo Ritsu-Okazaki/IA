@@ -4,6 +4,11 @@
 1. Fixed width encoding to store cue data
 2. Class for parsing cue data and nested dictionary for fixed width formatting specs
 3. Recursive traverse used for exporting cue data with tree
+## Packages/Libraries used
+1. sqlite3
+2. kivy 2.3.1
+3. kivymd 1.2.0
+4. csv
 ## 1. Fixed width formatting to store cue data
 To meet Success Criteria 2, allowing users to edit or add cue information and store them, and Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a standardized storage format in the database. At first, I had the option to create a column for each of the variables in the cue information in the relational database, which would look like below. <br>
 ![image](https://github.com/user-attachments/assets/62045649-8169-4a21-a757-8f91d93fe980) <br>
@@ -81,7 +86,7 @@ In `parse` function, I used dictionary comprehension which iterates through the 
 In `amalgamate` function, the code iterates through the parsed values in the input dictionary `parsed` and adds the value formatted to the correct digit length onto the resultant string which will be returned. To make the values into the length assigned by the formatting spec, I used a method called `rjust(width[, fillchar])` which will add the `fillchar` to the left of the string until the length of the string achieves `width`. In my code, the values which require digit control are all numerical, so the `fillchar` is "0", while the length is the difference between start and end digit stored in the tuple in the given formatting specs.
 
 ## 3. Recursive traverse used for exporting cue data with tree
-To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. However, there is no direct conversion between relational database and CSV. Therefore, to achieve the objective, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. However, each of the cues have hierarchy by having `parent_id`, where a scene can be a child of an act, an act can be a child of a play, and so on. <br>
+To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. However, there is no direct conversion between relational database and CSV. Therefore, to achieve the objective, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. A problem arises that it is difficult to sort the cues in the right order which each of them have hierarchy expressed in child-parent relationship by having variable `parent_id`, where a scene can be a child of an act, an act can be a child of a section, and so on like below. <br>
 ```
 Cue 1: Section
 ├── Cue 2: Act
@@ -91,8 +96,8 @@ Cue 1: Section
     └── Cue 6: Scene
         └── Cue 7: Sub-scene
 ```
-The program allows unlimited depth, so a for loop cannot be used to iterate through the cues and to find the right order if the child of a cue is queued in an unrelated later row far from the parent cue. To solve this issue, I made functions that uses recursive traversal to obtain cues related in a tree of dynamic depth. <br>
-For export, the function allows the input of the file name which will be used for the CSV file that will contain the cues once exported. The function will return only if the process is finished, and will not return any value.
+The program allows has undefined restriction for how far the hierarchical tree structure continues, so a for loop cannot be used to iterate through the cues and to find the right order if the child of a cue is queued in an unrelated later row far from the parent cue. To solve this issue, I made a function that uses recursive traversal to obtain cues related in a tree of dynamic depth. Though unrestricted depth may impose the risk of causing stack overflow, considering the properties of the tree structure of cues having small depth, I found that there is no practical concern to this method.  <br>
+For export, the function allows the string input of the file name which will be used for the CSV file that will contain the cues once exported in `name`. The function will return only if the process is finished, and will not return any value.
 ```.py
 def export_cue(name:str):
     file = open(f"{name}.csv", "w", newline="")
@@ -106,6 +111,7 @@ def export_cue(name:str):
         relationship[row[0]] = []
         cues[row[0]] = row
 
+    # Create root cue - child cue relationship in the "relationship" dictionary
     for row in all:
         parent_id = row[7]
         if parent_id not in ('', None):
@@ -115,15 +121,17 @@ def export_cue(name:str):
 
     order = []
 
+    # Recursive search for children to the maximum depth
     def traverse(cue_id):
         order.append(cue_id)
         for child in relationship.get(cue_id, []):
             traverse(child)
-
+    
     for cue_id in sorted(relationship):
         if cues[cue_id][7] == ''):
             traverse(cue_id)
 
+    # Write to the CSV in the order of the sorting
     writer = csv.writer(file)
     for cue_id in order:
         writer.writerow(cues[cue_id])
@@ -132,4 +140,4 @@ def export_cue(name:str):
     database.close()
     return
 ```
-The dictionary `relationship` creates the correspondance between a cue and its children. The function `traverse` will first run on a cue without a parent in `relationship`, then children of the cue are also searched in the same manner if they have children using the `.get` method, and they will sequentially get appended to the list `order` which saves the desired order of the cues. The use of recursive technique, unlike for loops, the program can algorithmically search through the tree structure regardless of the depth, which allows this sorting to be correct no matter what the relationship between the parents and children are at any level.
+The dictionary `relationship` creates the correspondance between a cue and its children. The function `traverse` will first run on a root cue that does not have a parent in `relationship`, then children of the cue are also searched in the same manner if they have children using the `.get` method by the function calling itself, and their `cue_id` will sequentially get appended to the list `order` which saves the desired order of the cues. The use of recursive technique, unlike for loops, the program can algorithmically search through the hierarchical tree structure regardless of the depth, which allows this sorting of the complex cue sequence to be correct regardless of what the relationship between the parents and children are at any level.
