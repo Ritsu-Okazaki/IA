@@ -3,7 +3,7 @@
 ## List of techniques used:
 1. Fixed width encoding to store cue data
 2. Class for parsing cue data and nested dictionary for fixed width formatting specs
-3. Recursive function for exporting/importing cue data with tree traversal
+3. Recursive traverse used for exporting cue data with tree
 ## 1. Fixed width formatting to store cue data
 To meet Success Criteria 2, allowing users to edit or add cue information and store them, and Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a standardized storage format in the database. At first, I had the option to create a column for each of the variables in the cue information in the relational database, which would look like below. <br>
 ![image](https://github.com/user-attachments/assets/62045649-8169-4a21-a757-8f91d93fe980) <br>
@@ -80,21 +80,56 @@ def get_spec(column_type:str)->dict:
 In `parse` function, I used dictionary comprehension which iterates through the component and digit tuple in the formatting spec, and formulates and returns a new dictionary by indexing the raw string according to the digits stored in the tuple, as value, and component name for its key.
 In `amalgamate` function, the code iterates through the parsed values in the input dictionary `parsed` and adds the value formatted to the correct digit length onto the resultant string which will be returned. To make the values into the length assigned by the formatting spec, I used a method called `rjust(width[, fillchar])` which will add the `fillchar` to the left of the string until the length of the string achieves `width`. In my code, the values which require digit control are all numerical, so the `fillchar` is "0", while the length is the difference between start and end digit stored in the tuple in the given formatting specs.
 
-## 3. Recursive function for exporting/importing cue data
-To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. However, there is no direct conversion between relational database and CSV. Therefore, to achieve the objective, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage.  One possible option is to use a loop in the main code, but to simplify, I created a dedicated function for each of import and export. I made functions that are self-contained which does not require on any global variables, based on the concept of modular programming. <br>
+## 3. Recursive traverse used for exporting cue data with tree
+To meet Success Criteria 5, allowing users to save or call the cues that they or others have created, I decided to create a method that transfers the cue data that the user has inputted from the database to a exportable file CSV, and vise versa. However, there is no direct conversion between relational database and CSV. Therefore, to achieve the objective, the program will be required to iterate through the rows in the source, and copy the values of each column to the corresponding row in the target storage. However, each of the cues have hierarchy by having `parent_id`, where a scene can be a child of an act, an act can be a child of a play, and so on. <br>
+```
+Cue 1: Section
+├── Cue 2: Act
+│   ├── Cue 4: Scene
+│   └── Cue 5: Scene
+└── Cue 3: Act
+    └── Cue 6: Scene
+        └── Cue 7: Sub-scene
+```
+The program allows unlimited depth, so a for loop cannot be used to iterate through the cues and to find the right order if the child of a cue is queued in an unrelated later row far from the parent cue. To solve this issue, I made functions that uses recursive traversal to obtain cues related in a tree of dynamic depth. <br>
 For export, the function allows the input of the file name which will be used for the CSV file that will contain the cues once exported. The function will return only if the process is finished, and will not return any value.
 ```.py
-def export_cue(n=1, database=None, file=None, name=None):
-    if n == 1:
-        file = open(f"{name}.csv", "w", newline="")
-        database = DatabaseManager('identifier.sqlite')
-    row = database.search(query = f"SELECT * FROM cues WHERE cue_id = {n}")
-    csv.writer(file).writerow(row[0])
-    print(row[0])
-    has_next = database.search(query = f"SELECT exists(SELECT 1 FROM cues WHERE cue_id = {n+1}) AS row_exists")
-    if has_next[0][0] == 1:
-        export_cue(n+1, database, file)
-    else:
-        database.close()
-        return
+def export_cue(name:str):
+    file = open(f"{name}.csv", "w", newline="")
+    database = DatabaseManager('identifier.sqlite')
+    all = database.search(query="SELECT * FROM cues ORDER BY parent_id")
+
+    relationship = {}
+    cues = {}
+
+    for row in all:
+        relationship[row[0]] = []
+        cues[row[0]] = row
+
+    for row in all:
+        parent_id = row[7]
+        if parent_id not in ('', None):
+            if parent_id not in relationship:
+                relationship[parent_id] = []
+            relationship[parent_id].append(row[0])
+
+    order = []
+
+    def traverse(cue_id):
+        order.append(cue_id)
+        for child in relationship.get(cue_id, []):
+            traverse(child)
+
+    for cue_id in sorted(relationship):
+        if cues[cue_id][7] == ''):
+            traverse(cue_id)
+
+    writer = csv.writer(file)
+    for cue_id in order:
+        writer.writerow(cues[cue_id])
+
+    file.close()
+    database.close()
+    return
 ```
+The dictionary `relationship` creates the correspondance between a cue and its children. The function `traverse` will first run on a cue without a parent in `relationship`, then children of the cue are also searched in the same manner if they have children using the `.get` method, and they will sequentially get appended to the list `order` which saves the desired order of the cues. The use of recursive technique, unlike for loops, the program can algorithmically search through the tree structure regardless of the depth, which allows this sorting to be correct no matter what the relationship between the parents and children are at any level.
