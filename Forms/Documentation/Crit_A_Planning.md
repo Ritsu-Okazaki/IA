@@ -13,3 +13,9 @@ I propose to create a local GUI application using python suitable for the client
 4. The user can assign each cue to a person in the “edit” screen and display separately in different columns in the “playback” screen _[issue solved: playback screen clearly shows genre assignment to people's names in GUI]_
 5. In the “save” screen, the user can save/call playbacks that they created in the “edit” screen _[issue solved: data edited in the edit screen will be saved to database as well as CSV file which is exportable]_
 6. The user can authenticate themselves through sign-up/login in the “login” screen to personalize their saved playbacks _[issue solved: login screen authenticates users by username and password]_
+
+### Client Approval of Success Criteria
+![image](https://github.com/user-attachments/assets/12147109-af2d-446f-9cd5-f1a8eb0eec44)
+_Fig.1 Email to client proposing success criteria_
+![image](https://github.com/user-attachments/assets/93d19f50-6488-4b7c-8aae-45f235135884)
+_Fig.2 Reply of approval from client_
